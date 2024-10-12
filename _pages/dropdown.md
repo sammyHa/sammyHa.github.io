@@ -1,9 +1,9 @@
 ---
-layout: page
-title: submenus
-nav: true
-nav_order: 8
-dropdown: true
+layout: blog
+title: about
+nav: false
+nav_order: 3
+dropdown: false
 children:
   - title: publications
     permalink: /publications/
@@ -12,5 +12,4 @@ children:
     permalink: /projects/
   - title: divider
   - title: blog
-    permalink: /blog/
 ---
