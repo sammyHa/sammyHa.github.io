@@ -1,81 +1,100 @@
 ---
 layout: page
-title: project 1
-description: with background image
+title: Hack The Box Legacy Machine Walkthrough
+# description: with background image
 img: assets/img/12.jpg
 importance: 1
 category: work
 related_publications: true
 ---
 
-Every project has a beautiful feature showcase page.
-It's easy to include images in a flexible 3-column grid format.
-Make your photos 1/3, 2/3, or full width.
+### Overview   
+This walkthrough covers a Network Vulnerability Assessment conducted on the retired Hack The Box (HTB) machine Legacy. Using Nmap and Nessus, I identified critical vulnerabilities, including the notorious EternalBlue (MS17-010) exploit in the unpatched SMB service. This assessment demonstrates the process of identifying and verifying vulnerabilities in a vulnerable Windows XP machine, simulating a real-world enterprise environment.
 
-To give your project a background in the portfolio page, just add the img tag to the front matter like so:
+**Tools Used**  
+* **Nmap:** For initial network scanning and service enumeration.
+* **Nessus:** For a detailed vulnerability scan, identifying critical security weaknesses.  
 
-    ---
-    layout: page
-    title: project
-    description: a project with a background image
-    img: /assets/img/12.jpg
-    ---
+**Step 1: Nmap Scan**  
+**Initial Scanning**  
+To start the assessment, I ran an ```Nmap``` scan to identify open ports and services running on the Legacy machine.
 
-<div class="row">
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/1.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/3.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/5.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
-</div>
-<div class="caption">
-    Caption photos easily. On the left, a road goes through a tunnel. Middle, leaves artistically fall in a hipster photoshoot. Right, in another hipster photoshoot, a lumberjack grasps a handful of pine needles.
-</div>
-<div class="row">
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/5.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
-</div>
-<div class="caption">
-    This image can also have a caption. It's like magic.
-</div>
+    nmap -sS -sV -T4 -A <Legacy_IP>
 
-You can also put regular text between your rows of images, even citations {% cite einstein1950meaning %}.
-Say you wanted to write a bit about your project before you posted the rest of the images.
-You describe how you toiled, sweated, _bled_ for your project, and then... you reveal its glory in the next row of images.
+---
 
-<div class="row justify-content-sm-center">
-    <div class="col-sm-8 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/6.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
-    <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/11.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
-</div>
-<div class="caption">
-    You can also have artistically styled 2/3 + 1/3 images, like these.
-</div>
+### Scan Output Summary
+The Nmap scan revealed several open ports and identified the services running on them:
 
-The code is simple.
-Just wrap your images with `<div class="col-sm">` and place them inside `<div class="row">` (read more about the <a href="https://getbootstrap.com/docs/4.4/layout/grid/">Bootstrap Grid</a> system).
-To make images responsive, add `img-fluid` class to each; for rounded corners and shadows use `rounded` and `z-depth-1` classes.
-Here's the code for the last row of images above:
+ <img src="{{ '/assets/img/13.png' | relative_url }}" alt="alt text" class="img-fluid rounded" style="max-width: 100%; height: auto;">
 
-{% raw %}
+This initial scan showed that **SMB (Server Message Block)** is running on port 445, which raised concerns about potential vulnerabilities, especially the infamous **EternalBlue (MS17-010)** exploit. The Windows XP operating system itself is known to have multiple unpatched vulnerabilities.
 
-```html
-<div class="row justify-content-sm-center">
-  <div class="col-sm-8 mt-3 mt-md-0">
-    {% include figure.liquid path="assets/img/6.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-  </div>
-  <div class="col-sm-4 mt-3 mt-md-0">
-    {% include figure.liquid path="assets/img/11.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-  </div>
-</div>
+---
+
+### Step 2: Nessus Scan  
+**Setting Up Nessus**  
+Next, I set up Nessus to run a vulnerability scan on the Legacy machine. I used the Basic Network Scan template, which covers a wide range of vulnerabilities, including:
+
+* SMB vulnerabilities,
+* Unpatched software,
+* Weak configurations.
+* Nessus Scan Results:
+Nessus identified several critical vulnerabilities. Here are the most important findings:
+
+<img src="{{ '/assets/img/nessus-findings.png' | relative_url }}" alt="alt text" class="img-fluid rounded" style="max-width: 100%; height: auto;">
+
+The **EternalBlue** vulnerability is particularly noteworthy because it allows attackers to gain complete control of the system remotely. This vulnerability was a major part of the WannaCry ransomware attacks, making it a critical weakness in the network.
+
+---
+
+### Step 3: Manual Verification with Nmap
+To manually verify the **EternalBlue** vulnerability detected by Nessus, I used **Nmap**'s scripting engine (```NSE```). This allowed me to run a script that specifically checks for MS17-010 on the target machine.
+
+    nmap --script smb-vuln-ms17-010 -p445 <Legacy_IP>
+
+### Verification Output:
+The Nmap script confirmed that the Legacy machine is vulnerable to **MS17-010**:
+
+```yaml
+Host script results:
+smb-vuln-ms17-010:
+VULNERABLE:
+Remote Code Execution vulnerability in Microsoft SMBv1
+State: VULNERABLE
+IDs:  CVE-2017-0143
+Risk factor: HIGH
 ```
+This verification step ensured that the Nessus scan result was accurate and that the machine was indeed susceptible to the EternalBlue exploit.
 
-{% endraw %}
+---
+
+### Step 4: Exploitation (Optional)
+Although this step is not part of a standard vulnerability assessment, I decided to verify the risk of the EternalBlue vulnerability by attempting to exploit it using Metasploit. This helps demonstrate the potential impact of the vulnerability.
+
+```bash
+msfconsole
+use exploit/windows/smb/ms17_010_eternalblue
+set RHOST <Legacy_IP>
+exploit
+```
+Within seconds, I gained remote shell access to the Legacy machine, confirming that this vulnerability could lead to a full system compromise in an enterprise environment.
+
+---
+
+### Step 5: Reporting and Mitigation
+**Findings Summary**
+The Nessus and Nmap scans revealed several high-risk vulnerabilities on the Legacy machine, with the most critical being EternalBlue (MS17-010). Other notable issues included weak SMB configurations and multiple unpatched Windows XP services.
+
+### Recommendations:
+1. **Upgrade Operating System:** Since Windows XP is no longer supported, the organization should upgrade to a modern operating system with ongoing security updates.
+2. **Disable SMBv1:** Disabling SMBv1 will mitigate vulnerabilities like EternalBlue.
+3. **Apply Security Patches:** Ensure all critical updates are applied to address known vulnerabilities like MS17-010.
+4. **Harden Network Configuration:** Disable or secure unnecessary services, such as NetBIOS over TCP/IP, and enforce proper authentication mechanisms for SMB.
+
+---
+
+### Conclusion
+This vulnerability assessment of the Hack The Box Legacy machine demonstrated the use of Nmap and Nessus to identify and verify critical vulnerabilities, such as EternalBlue (MS17-010). The findings emphasized the importance of patching and upgrading legacy systems in an enterprise environment to mitigate the risk of attacks like WannaCry and NotPetya.
+
+By following these steps and addressing the vulnerabilities, network administrators can significantly improve their security posture and protect their systems from being compromised.
